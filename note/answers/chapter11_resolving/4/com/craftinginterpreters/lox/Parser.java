@@ -6,6 +6,7 @@ import java.util.List;
 
 import static com.craftinginterpreters.lox.TokenType.*;
 
+
 class Parser {
   private static class ParseError extends RuntimeException {}
 
@@ -244,7 +245,7 @@ class Parser {
   private Expr multiplication() {
     Expr expr = unary();
 
-    while (match(SLASH, STAR)) {
+    while (match(SLASH, STAR, PERCENT)) {
       Token operator = previous();
       Expr right = unary();
       expr = new Expr.Binary(expr, operator, right);

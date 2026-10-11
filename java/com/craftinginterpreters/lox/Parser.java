@@ -377,15 +377,37 @@ class Parser {
     Expr expr = conditional();
 //< Control Flow or-in-assignment
 
-    if (match(EQUAL)) {
+    if (match(EQUAL, PLUS_EQUAL, MINUS_EQUAL, STAR_EQUAL, SLASH_EQUAL)) {
       Token equals = previous();
       Expr value = assignment();
 
-      if (expr instanceof Expr.Variable) {
-        Token name = ((Expr.Variable)expr).name;
-        return new Expr.Assign(name, value);
+      if (expr instanceof Expr.Variable && equals.type ==PLUS_EQUAL) {// checks if variable and is plus equal
+        Token name = ((Expr.Variable)expr).name;//getting variable name
+        Token NewTokenObj = new Token(PLUS, "+", null, equals.line);//new token object that treats plus equal as plus when reading the logic in program
+        value = new Expr.Binary(expr,NewTokenObj, value);
+        return new Expr.Assign(name, value);//assignment that uses the new binary operation change
 //> Classes assign-set
-      } else if (expr instanceof Expr.Get) {
+      }
+      else if (expr instanceof Expr.Variable && equals.type ==MINUS_EQUAL) {
+        Token name = ((Expr.Variable)expr).name;
+        Token NewTokenObj = new Token(MINUS, "-", null, equals.line);
+        value = new Expr.Binary(expr,NewTokenObj, value);
+        return new Expr.Assign(name, value);
+      }
+      else if (expr instanceof Expr.Variable && equals.type ==STAR_EQUAL) {
+        Token name = ((Expr.Variable)expr).name;
+        Token NewTokenObj = new Token(STAR, "*", null, equals.line);
+        value = new Expr.Binary(expr,NewTokenObj, value);
+        return new Expr.Assign(name, value);
+      }
+      else if (expr instanceof Expr.Variable && equals.type ==SLASH_EQUAL) {
+        Token name = ((Expr.Variable)expr).name;
+        Token NewTokenObj = new Token(SLASH, "/", null, equals.line);
+        value = new Expr.Binary(expr,NewTokenObj, value);
+        return new Expr.Assign(name, value);
+      }
+
+      else if (expr instanceof Expr.Get) {
         Expr.Get get = (Expr.Get)expr;
         return new Expr.Set(get.object, get.name, value);
 //< Classes assign-set
@@ -520,7 +542,7 @@ class Parser {
 //> factor
   private Expr factor() {
     Expr expr;
-    if(match(SLASH, STAR)){
+    if(match(SLASH, STAR, PERCENT)){
       Token operator = previous();
       error(operator, "The left hand operand is missing");
       Expr discard = unary();
@@ -529,7 +551,7 @@ class Parser {
       expr = unary();
     }
 
-    while (match(SLASH, STAR)) {
+    while (match(SLASH, STAR, PERCENT)) {
       Token operator = previous();
       Expr right = unary();
       expr = new Expr.Binary(expr, operator, right);

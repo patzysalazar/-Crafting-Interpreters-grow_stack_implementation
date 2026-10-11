@@ -388,6 +388,9 @@ public Object evaluate(Expr expr) {
         checkNumberOperands(expr.operator, left, right);
 //< check-star-operand
         return (double)left * (double)right;
+        case PERCENT:
+        //For Modulo
+        return (double)left % (double)right;
     }
 
     // Unreachable.

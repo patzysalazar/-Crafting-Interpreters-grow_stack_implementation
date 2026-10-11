@@ -66,12 +66,13 @@ class Scanner {
       case '}': addToken(RIGHT_BRACE); break;
       case ',': addToken(COMMA); break;//Scanner already recognizes the commas so no addition to scanner, only parser
       case '.': addToken(DOT); break;
-      case '-': addToken(MINUS); break;
-      case '+': addToken(PLUS); break;
+      case '-': addToken(match('=') ? MINUS_EQUAL : MINUS); break;
+      case '+': addToken(match('=') ? PLUS_EQUAL : PLUS); break;
       case ';': addToken(SEMICOLON); break;
-      case '*': addToken(STAR); break; // [slash]
+      case '*': addToken(match('=') ? STAR_EQUAL : STAR); break; // [slash]
       case '?': addToken(QUESTION_MARK); break;
       case ':':addToken(COLON); break;
+      case '%':addToken(PERCENT); break;//modulo
 //> two-char-tokens
       case '!':
         addToken(match('=') ? BANG_EQUAL : BANG);
@@ -115,7 +116,7 @@ class Scanner {
                 //--------------------
             }
         } else{
-            addToken(SLASH);
+            addToken(match('=')? SLASH_EQUAL: SLASH);
         }
         break;
         //_______________________________________________________
