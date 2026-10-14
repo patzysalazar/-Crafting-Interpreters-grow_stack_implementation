@@ -526,7 +526,7 @@ public Object evaluate(Expr expr) {
 //< super-find-this
 //> super-find-method
 
-    LoxFunction method = superclass.findMethod(expr.method.lexeme);
+    LoxFunction method = superclass.findMethod(object, expr.method.lexeme);//lox obj
 //> super-no-method
 
     if (method == null) {
@@ -535,7 +535,7 @@ public Object evaluate(Expr expr) {
     }
 
 //< super-no-method
-    return method.bind(object);
+    return method;
 //< super-find-method
   }
 //< Inheritance interpreter-visit-super

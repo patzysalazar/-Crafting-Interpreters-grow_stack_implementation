@@ -38,9 +38,10 @@ class LoxFunction implements LoxCallable {
     this.get = get;
   }
 //> Classes bind-instance
-  LoxFunction bind(LoxInstance instance) {
+  LoxFunction bind(LoxInstance instance, LoxFunction innerMethod) {//connects outer method to obj
     Environment environment = new Environment(closure);
-    environment.define(0, instance);
+    environment.define(0, instance);//this
+    environment.define(1, innerMethod);//inner// make changes to resolver
 /* Classes bind-instance < Classes lox-function-bind-with-initializer
     return new LoxFunction(declaration, environment);
 */

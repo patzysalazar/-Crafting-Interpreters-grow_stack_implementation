@@ -24,16 +24,13 @@ class LoxInstance {
     }
 
 //> lox-instance-get-method
-    LoxFunction method = klass.findMethod(name.lexeme);
+    LoxFunction method = klass.findMethod(this, name.lexeme);
 /* Classes lox-instance-get-method < Classes lox-instance-bind-method
     if (method != null) return method;
 */
 //> lox-instance-bind-method
-      if(method != null) {
-          if(method.bind(this).get){
-//get????????
-          }
-          return method.bind(this);
+      if(method != null) {//got rid of bind since findMethod binds
+          return method;
       }
 
 

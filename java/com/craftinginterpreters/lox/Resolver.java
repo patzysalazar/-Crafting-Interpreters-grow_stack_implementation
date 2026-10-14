@@ -130,6 +130,13 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     Variable var = new Variable();
     var.defined = true;
     scopes.peek().put("this", var);
+    var.index = 0;
+
+    Variable innerVar = new Variable();//needs to match environment
+    innerVar.defined = true;
+    scopes.peek().put("inner", innerVar);
+    innerVar.index = 1;//tells interpreter where inner is
+
 
 //< resolver-begin-this-scope
     for (Stmt.Function method : stmt.methods) {
@@ -423,9 +430,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
   private void endScope() {
     // go to all key pair in scope(entry) and call pair pair
     for(Map.Entry<String, Variable> keyPair : scopes.peek().entrySet()) {
-          if (!keyPair.getValue().read && !keyPair.getKey().equals("super") && !keyPair.getKey().equals("this")) {//skip this and super entries
+          if (!keyPair.getValue().read && !keyPair.getKey().equals("super") && !keyPair.getKey().equals("this")&& !keyPair.getKey().equals("inner")) {//skip this and super entries
             Lox.error(keyPair.getValue().name, "Local Variable not used");
-          }
+          }//inner added to if statement
 
       }
       scopes.pop();
