@@ -103,6 +103,10 @@ typedef enum {
 } OpCode;
 //< op-enum
 //> chunk-struct
+typedef struct{
+int sourceLineNumb;//source line number
+int instructionCount;//instruction count
+} Group;
 
 typedef struct {
 //> count-and-capacity
@@ -111,14 +115,20 @@ typedef struct {
 //< count-and-capacity
   uint8_t* code;
 //> chunk-lines
-  int* lines;
+  Group* lines;
+  int lineCount;
+  int lineCapacity;
 //< chunk-lines
 //> chunk-constants
   ValueArray constants;
 //< chunk-constants
+
 } Chunk;
 //< chunk-struct
 //> init-chunk-h
+
+
+int getLine(Chunk* chunk, int instruct);
 
 void initChunk(Chunk* chunk);
 //< init-chunk-h
