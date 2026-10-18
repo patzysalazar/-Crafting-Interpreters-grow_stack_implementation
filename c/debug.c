@@ -27,6 +27,20 @@ static int constantInstruction(const char* name, Chunk* chunk,
   return offset + 2;
 //< return-after-operand
 }
+
+static int longConstantInstruction(const char* name, Chunk* chunk, int offsetInstruction){
+    uint32_t byte_1 = chunk->code[offsetInstruction + 1];
+    uint32_t byte_2 = chunk->code[offsetInstruction + 2] << 8;
+    uint32_t byte_3 = chunk->code[offsetInstruction + 3] << 16;
+
+    uint32_t index = byte_1 | byte_2 | byte_3;
+
+    printf("%-20s %20d '", name, index);
+    printValue(chunk->constants.values[index]);
+    printf("'\n");
+    return offsetInstruction + 4;
+
+}
 //< constant-instruction
 //> Methods and Initializers invoke-instruction
 static int invokeInstruction(const char* name, Chunk* chunk,
@@ -80,6 +94,9 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 //> disassemble-constant
     case OP_CONSTANT:
       return constantInstruction("OP_CONSTANT", chunk, offset);
+    case OP_CONSTANT_LONG:
+      return longConstantInstruction("OP_CONSTANT_LONG", chunk, offset);
+
 //< disassemble-constant
 //> Types of Values disassemble-literals
     case OP_NIL:

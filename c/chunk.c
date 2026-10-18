@@ -116,3 +116,17 @@ int addConstant(Chunk* chunk, Value value) {
   return chunk->constants.count - 1;
 }
 //< add-constant
+void writeConstant(Chunk* chunk, Value value, int line){
+    int index = addConstant(chunk, value);
+    if(index>= 256){//index can't fit in one byte
+        writeChunk(chunk, OP_CONSTANT_LONG, line);//opcode
+        writeChunk(chunk, (uint8_t)(index & 0xff), line);//index byte 1
+        writeChunk(chunk, (uint8_t)((index>>8 & 0xff)), line);//byte 2
+        writeChunk(chunk, (uint8_t)((index>>16 & 0xff)), line);//byte 3
+    }
+    else{//index from 0-255
+        writeChunk(chunk, OP_CONSTANT, line);//opcode
+        writeChunk(chunk, (uint8_t)index, line);//index byte 1
+    }
+
+}

@@ -487,6 +487,12 @@ static InterpretResult run() {
 //< push-constant
         break;
       }
+      case OP_CONSTANT_LONG: {
+          uint32_t index = READ_BYTE() | (uint32_t)READ_BYTE() << 8 | (uint32_t)READ_BYTE() << 16;//reads next byte and advances pointer by 8 bits and 16
+          Value constant = frame-> closure-> function->chunk.constants.values[index];//access to constant from index
+          push(constant);
+          break;
+      }
 //< op-constant
 //> Types of Values interpret-literals
       case OP_NIL: push(NIL_VAL); break;
