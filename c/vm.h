@@ -51,8 +51,9 @@ typedef struct {
   
 //< Calls and Functions frame-array
 //> vm-stack
-  Value stack[STACK_MAX];
-  Value* stackTop;
+  Value* stack;//points to start of stack memory
+  int stackTop;//points to next stack position
+  int stackCap;//how much stack can hold
 //< vm-stack
 //> Global Variables vm-globals
   Table globals;
@@ -94,6 +95,7 @@ extern VM vm;
 
 //< Strings extern-vm
 void initVM();
+
 void freeVM();
 /* A Virtual Machine interpret-h < Scanning on Demand vm-interpret-h
 InterpretResult interpret(Chunk* chunk);
@@ -105,5 +107,7 @@ InterpretResult interpret(const char* source);
 void push(Value value);
 Value pop();
 //< push-pop
+//static void resetStack();
+
 
 #endif

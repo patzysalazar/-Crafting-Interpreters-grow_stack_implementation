@@ -10,6 +10,7 @@
 //> Calls and Functions vm-include-time
 #include <time.h>
 //< Calls and Functions vm-include-time
+#include <stdlib.h>
 
 //< vm-include-stdio
 #include "common.h"
@@ -33,13 +34,15 @@ static Value clockNative(int argCount, Value* args) {
 //< Calls and Functions clock-native
 //> reset-stack
 static void resetStack() {
-  vm.stackTop = vm.stack;
+  //vm.stackTop = vm.stack;
 //> Calls and Functions reset-frame-count
-  vm.frameCount = 0;
+    vm.frameCount = 0;
 //< Calls and Functions reset-frame-count
 //> Closures init-open-upvalues
-  vm.openUpvalues = NULL;
 //< Closures init-open-upvalues
+
+    vm.stackTop = 0;//reset index to 0
+    vm.openUpvalues = NULL;// reset pointer that tracks inner function variables from outer function
 }
 //< reset-stack
 //> Types of Values runtime-error
@@ -96,8 +99,10 @@ static void defineNative(const char* name, NativeFn function) {
 //< Calls and Functions define-native
 
 void initVM() {
+vm.stack = NULL;//no memory allocation
+vm.stackCap = 0;
 //> call-reset-stack
-  resetStack();
+  resetStack();//stack index at 0
 //< call-reset-stack
 //> Strings init-objects-root
   vm.objects = NULL;
@@ -145,22 +150,76 @@ void freeVM() {
 //> Strings call-free-objects
   freeObjects();
 //< Strings call-free-objects
+  FREE_ARRAY(Value, vm.stack, vm.stackCap);
 }
 //> push
 void push(Value value) {
-  *vm.stackTop = value;
-  vm.stackTop++;
+   if(vm.stackCap <= vm.stackTop){
+        int oldCap = vm.stackCap;
+        int newCap = GROW_CAPACITY(oldCap);
+   //if stack full, increase cap for new value
+             //printf("Growing stack: old capacity=%d, stackTop=%d\n",vm.stackCap, vm.stackTop);
+          //printf("Before growth: stack=%p\n", (void*)vm.stack);
+          ptrdiff_t frameOffsets[FRAMES_MAX];
+
+          for (int i = 0; i < vm.frameCount; i++) {
+              frameOffsets[i] = vm.frames[i].slots - vm.stack;
+          }
+          int upvalueCount = 0;
+
+          for (ObjUpvalue* upvalue = vm.openUpvalues;
+               upvalue != NULL;
+               upvalue = upvalue->next) {
+              upvalueCount++;
+          }
+
+          ptrdiff_t* upvalueOffsets = NULL;
+
+          if (upvalueCount > 0) {
+              upvalueOffsets = malloc(sizeof(ptrdiff_t) * upvalueCount);
+
+              if (upvalueOffsets == NULL) {
+                  fprintf(stderr, "Not enough memory to grow stack.\n");
+                  exit(1);
+              }
+
+              int i = 0;
+              for (ObjUpvalue* upvalue = vm.openUpvalues;
+                   upvalue != NULL;
+                   upvalue = upvalue->next) {
+                  upvalueOffsets[i++] = upvalue->location - vm.stack;
+              }
+          }
+          vm.stack = GROW_ARRAY(Value, vm.stack, oldCap, newCap);
+          vm.stackCap = newCap;//updated to new stack cap, from older cap to new cap
+          for (int i = 0; i < vm.frameCount; i++) {
+              vm.frames[i].slots = vm.stack + frameOffsets[i];
+          }
+          int i = 0;
+
+          for (ObjUpvalue* upvalue = vm.openUpvalues;
+               upvalue != NULL;
+               upvalue = upvalue->next) {
+               //printf("Restoring upvalue: offset=%td\n", upvalueOffsets[i]);
+              upvalue->location = vm.stack + upvalueOffsets[i++];
+
+          }
+
+          free(upvalueOffsets);
+      }
+      vm.stack[vm.stackTop] = value;
+      vm.stackTop++;
 }
 //< push
 //> pop
 Value pop() {
-  vm.stackTop--;
-  return *vm.stackTop;
+  int poppedVar = --vm.stackTop;//decrease stacktop to pop value
+  return vm.stack[poppedVar];//returns index after popped value
 }
 //< pop
 //> Types of Values peek
 static Value peek(int distance) {
-  return vm.stackTop[-1 - distance];
+  return vm.stack[vm.stackTop -1 - distance];
 }
 //< Types of Values peek
 /* Calls and Functions call < Closures call-signature
@@ -201,7 +260,7 @@ static bool call(ObjClosure* closure, int argCount) {
   frame->closure = closure;
   frame->ip = closure->function->chunk.code;
 //< Closures call-init-closure
-  frame->slots = vm.stackTop - argCount - 1;
+  frame->slots = vm.stack + vm.stackTop - argCount - 1;//add vm.stack since stacktop is int
   return true;
 }
 //< Calls and Functions call
@@ -213,7 +272,7 @@ static bool callValue(Value callee, int argCount) {
       case OBJ_BOUND_METHOD: {
         ObjBoundMethod* bound = AS_BOUND_METHOD(callee);
 //> store-receiver
-        vm.stackTop[-argCount - 1] = bound->receiver;
+        vm.stack[vm.stackTop-argCount - 1] = bound->receiver;
 //< store-receiver
         return call(bound->method, argCount);
       }
@@ -221,7 +280,7 @@ static bool callValue(Value callee, int argCount) {
 //> Classes and Instances call-class
       case OBJ_CLASS: {
         ObjClass* klass = AS_CLASS(callee);
-        vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(klass));
+        vm.stack[vm.stackTop-argCount - 1] = OBJ_VAL(newInstance(klass));
 //> Methods and Initializers call-init
         Value initializer;
         if (tableGet(&klass->methods, vm.initString,
@@ -249,7 +308,7 @@ static bool callValue(Value callee, int argCount) {
 //> call-native
       case OBJ_NATIVE: {
         NativeFn native = AS_NATIVE(callee);
-        Value result = native(argCount, vm.stackTop - argCount);
+        Value result = native(argCount,vm.stack + vm.stackTop - argCount);
         vm.stackTop -= argCount + 1;
         push(result);
         return true;
@@ -290,7 +349,7 @@ static bool invoke(ObjString* name, int argCount) {
 
   Value value;
   if (tableGet(&instance->fields, name, &value)) {
-    vm.stackTop[-argCount - 1] = value;
+    vm.stack[vm.stackTop-argCount - 1] = value;
     return callValue(value, argCount);
   }
 
@@ -451,7 +510,7 @@ static InterpretResult run() {
 #ifdef DEBUG_TRACE_EXECUTION
 //> trace-stack
     printf("          ");
-    for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
+    for (Value* slot = vm.stack; slot < vm.stack + vm.stackTop; slot++) {
       printf("[ ");
       printValue(*slot);
       printf(" ]");
@@ -791,7 +850,7 @@ static InterpretResult run() {
 //< Closures interpret-closure
 //> Closures interpret-close-upvalue
       case OP_CLOSE_UPVALUE:
-        closeUpvalues(vm.stackTop - 1);
+        closeUpvalues(vm.stack + vm.stackTop - 1);
         pop();
         break;
 //< Closures interpret-close-upvalue
@@ -817,7 +876,7 @@ static InterpretResult run() {
           return INTERPRET_OK;
         }
 
-        vm.stackTop = frame->slots;
+        vm.stackTop = (int)(frame->slots - vm.stack);
         push(result);
         frame = &vm.frames[vm.frameCount - 1];
         break;

@@ -231,7 +231,7 @@ static void freeObject(Obj* object) {
 //< Strings free-object
 //> Garbage Collection mark-roots
 static void markRoots() {
-  for (Value* slot = vm.stack; slot < vm.stackTop; slot++) {
+  for (Value* slot = vm.stack; slot < vm.stack + vm.stackTop; slot++){
     markValue(*slot);
   }
 //> mark-closures
